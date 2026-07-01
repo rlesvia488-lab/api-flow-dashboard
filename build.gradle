@@ -1,0 +1,66 @@
+plugins {
+    id 'java'
+    id 'org.springframework.boot' version '3.3.4'
+    id 'io.spring.dependency-management' version '1.1.6'
+    id 'com.github.node-gradle.node' version '7.0.2'
+}
+
+group = 'com.socgen.unibank'
+version = '0.1.0'
+description = 'Vault-driven API call-graph dashboard (config discovery + live health checks)'
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
+}
+
+repositories {
+    mavenCentral()
+}
+
+ext {
+    springVaultVersion = '3.1.2'
+}
+
+dependencies {
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation "org.springframework.vault:spring-vault-core:${springVaultVersion}"
+
+    annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
+
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+}
+
+tasks.named('test') {
+    useJUnitPlatform()
+}
+
+// --- Frontend build (React + Cytoscape.js), baked into the jar as static resources ---
+// Skip with -PskipFrontendBuild when iterating on Java only (reuses whatever's
+// already in build/resources/main/static).
+node {
+    version = '20.16.0'
+    download = true
+    nodeProjectDir = file('frontend')
+}
+
+tasks.register('npmBuild', com.github.gradle.node.npm.task.NpmTask) {
+    dependsOn tasks.named('npmInstall')
+    args = ['run', 'build']
+    inputs.dir('frontend/src')
+    inputs.file('frontend/package.json')
+    outputs.dir('frontend/dist')
+}
+
+if (!project.hasProperty('skipFrontendBuild')) {
+    tasks.named('processResources') {
+        dependsOn tasks.named('npmBuild')
+        from('frontend/dist') {
+            into 'static'
+        }
+    }
+}
+
+tasks.named('bootJar') {
+    archiveFileName = 'service.jar'
+}

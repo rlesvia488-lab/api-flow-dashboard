@@ -9,7 +9,7 @@ UI baked into `static/`.
 ## Run in demo mode (no Vault needed)
 
 ```
-./mvnw spring-boot:run
+./gradlew bootRun
 ```
 
 Open http://localhost:8080. Demo mode (`vault.enabled=false`, the default)
@@ -53,14 +53,14 @@ third-party SaaS dependencies that aren't part of your Vault-managed fleet.
 ## Building
 
 ```
-./mvnw package
+./gradlew bootJar
 ```
 
-Produces `target/service.jar`. The `frontend-maven-plugin` installs its own
-Node/npm and runs `npm run build`, copying `frontend/dist` into
-`src/main/resources/static` before the jar is assembled — one command, one
-jar. Skip the frontend build with `-Dskip.frontend.build=true` when iterating
-on Java only (reuses whatever's already in `target/classes/static`).
+Produces `build/libs/service.jar`. The `com.github.node-gradle.node` plugin
+installs its own Node/npm and runs `npm run build`, copying `frontend/dist`
+into the jar's `static/` resources before it's assembled — one command, one
+jar. Skip the frontend build with `-PskipFrontendBuild` when iterating on
+Java only (reuses whatever's already in `build/resources/main/static`).
 
 ## Tuning
 
