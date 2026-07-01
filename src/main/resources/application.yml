@@ -1,0 +1,34 @@
+spring:
+  application:
+    name: api-flow-dashboard
+
+server:
+  port: 8080
+
+logging:
+  level:
+    com.socgen.unibank: INFO
+
+vault:
+  enabled: false        # set VAULT_ENABLED=true in real environments (matches existing launch script)
+  uri: ${VAULT_URI:}
+  namespace: ${VAULT_NAMESPACE:}
+  role-id: ${VAULT_ROLE_ID:}
+  secret-id: ${VAULT_SECRET_ID:}
+  kv-mount: abb
+  env: prd
+  secret-name: default
+
+dashboard:
+  endpoint-key-suffix: ".endpoint"
+  strip-prefixes:
+    - "unibank.services."
+    - "unibank.service."
+  service-name-suffixes:
+    - "-service"
+    - "_service"
+    - ".service"
+  config-refresh-interval: 60s
+  health-check-interval: 20s
+  health-check-timeout: 3s
+  trust-all-certs-for-health-checks: true
