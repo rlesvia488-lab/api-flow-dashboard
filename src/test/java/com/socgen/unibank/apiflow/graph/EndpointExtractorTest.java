@@ -37,20 +37,19 @@ class EndpointExtractorTest {
     }
 
     @Test
-    void extract_walksNestedMapsAndBuildsDottedPath() {
+    void extract_walksNestedMapsUnderAServicePrefixAndBuildsDottedPath() {
         Map<String, Object> nested = new LinkedHashMap<>();
-        nested.put("bucket", "some-bucket");
-        nested.put("endpoint", "https://s3.internal.example.com");
-        nested.put("secret-key", "should-be-ignored-anyway-not-an-endpoint-key");
+        nested.put("timeout", "5000");
+        nested.put("endpoint", "https://abb-ledger-core-service.example.com");
 
         Map<String, Object> config = new LinkedHashMap<>();
-        config.put("unibank.components.s3.private", nested);
+        config.put("unibank.services.ledger.core", nested);
 
         List<EndpointExtractor.RawEndpoint> found = extractor.extract(config);
 
         assertThat(found).hasSize(1);
-        assertThat(found.get(0).keyPath()).isEqualTo("unibank.components.s3.private.endpoint");
-        assertThat(found.get(0).url()).isEqualTo("https://s3.internal.example.com");
+        assertThat(found.get(0).keyPath()).isEqualTo("unibank.services.ledger.core.endpoint");
+        assertThat(found.get(0).url()).isEqualTo("https://abb-ledger-core-service.example.com");
     }
 
     @Test
@@ -59,7 +58,22 @@ class EndpointExtractorTest {
         config.put("unibank.service.version", "1.2.3");
         config.put("unibank.components.db.entities", Map.of());
         // key ends with ".endpoint" but the value isn't a URL - should not be extracted
-        config.put("weird.but.not.a.url.endpoint", "not-a-url");
+        config.put("unibank.services.weird.endpoint", "not-a-url");
+
+        assertThat(extractor.extract(config)).isEmpty();
+    }
+
+    @Test
+    void extract_ignoresInfrastructureAndComponentEndpoints() {
+        // *.endpoint keys outside the configured service-call prefixes (e.g. backing
+        // infra like S3/DB) are not inter-API calls and must not appear in the graph.
+        Map<String, Object> config = new LinkedHashMap<>();
+        config.put("unibank.components.s3.private", Map.of(
+                "bucket", "some-bucket",
+                "endpoint", "https://s3.internal.example.com",
+                "access-key", "AKIA-SOMETHING",
+                "secret-key", "super-secret-value"
+        ));
 
         assertThat(extractor.extract(config)).isEmpty();
     }
@@ -67,10 +81,10 @@ class EndpointExtractorTest {
     @Test
     void extract_ignoresSecretsAndCredentialsEntirely() {
         Map<String, Object> config = new LinkedHashMap<>();
-        config.put("unibank.components.s3.private", Map.of(
+        config.put("unibank.services.storage", Map.of(
                 "access-key", "AKIA-SOMETHING",
                 "secret-key", "super-secret-value",
-                "endpoint", "https://s3.internal.example.com"
+                "endpoint", "https://storage-service.example.com"
         ));
 
         List<EndpointExtractor.RawEndpoint> found = extractor.extract(config);

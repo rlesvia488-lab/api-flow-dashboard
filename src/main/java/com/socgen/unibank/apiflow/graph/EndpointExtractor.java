@@ -9,9 +9,15 @@ import java.util.Map;
 
 /**
  * Walks a (possibly mixed flat/nested) config map and pulls out every
- * "*.endpoint" -> URL pair. Only the matched key path and URL are ever
- * extracted - the rest of the config (secrets, credentials, etc.) is never
- * touched, so nothing sensitive can leak downstream by construction.
+ * "*.endpoint" -> URL pair that lives under a configured service-call prefix
+ * (dashboard.strip-prefixes, e.g. "unibank.services."). Only the matched key
+ * path and URL are ever extracted - the rest of the config (secrets,
+ * credentials, etc.) is never touched, so nothing sensitive can leak
+ * downstream by construction.
+ *
+ * <p>Endpoints outside those prefixes (e.g. "unibank.components.s3.private.endpoint")
+ * are infrastructure/backing-service config, not inter-API calls, and are
+ * deliberately excluded so the graph only shows service-to-service traffic.
  */
 @Component
 public class EndpointExtractor {
@@ -40,10 +46,22 @@ public class EndpointExtractor {
 
             if (value instanceof Map<?, ?> nested) {
                 walk(path, (Map<String, Object>) nested, found);
-            } else if (value instanceof String str && path.endsWith(props.getEndpointKeySuffix()) && looksLikeUrl(str)) {
+            } else if (value instanceof String str
+                    && path.endsWith(props.getEndpointKeySuffix())
+                    && hasServiceCallPrefix(path)
+                    && looksLikeUrl(str)) {
                 found.add(new RawEndpoint(path, str));
             }
         }
+    }
+
+    private boolean hasServiceCallPrefix(String path) {
+        for (String prefix : props.getStripPrefixes()) {
+            if (path.startsWith(prefix)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private boolean looksLikeUrl(String value) {

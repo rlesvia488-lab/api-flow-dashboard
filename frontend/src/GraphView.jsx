@@ -223,11 +223,73 @@ export default function GraphView({ graph, onSelectEdge, onSelectNode }) {
     const cy = cyRef.current;
     if (!cy || !graph) return;
 
-    cy.elements().remove();
-    cy.add(buildElements(graph));
-    cy.layout({ name: 'dagre', rankDir: 'LR', nodeSep: 55, rankSep: 130, edgeSep: 25 }).run();
-    cy.fit(undefined, 40);
+    const newElements = buildElements(graph);
+    const newIds = new Set(newElements.map((el) => el.data.id));
+    const existingIds = new Set(cy.elements().map((el) => el.id()));
+    const isFirstLoad = existingIds.size === 0;
+
+    let structureChanged = newIds.size !== existingIds.size;
+    if (!structureChanged) {
+      for (const id of newIds) {
+        if (!existingIds.has(id)) {
+          structureChanged = true;
+          break;
+        }
+      }
+    }
+
+    if (structureChanged) {
+      // Topology actually changed (service/edge added or removed) - rebuild and
+      // re-layout. Only snap the viewport with fit() on the very first load;
+      // afterwards a growing graph shouldn't yank a zoomed-in user back out.
+      cy.elements().forEach((el) => {
+        if (!newIds.has(el.id())) el.remove();
+      });
+      newElements.forEach((el) => {
+        const existing = cy.getElementById(el.data.id);
+        if (existing.length > 0) {
+          existing.data(el.data);
+          existing.classes(el.classes);
+        } else {
+          cy.add(el);
+        }
+      });
+      cy.layout({ name: 'dagre', rankDir: 'LR', nodeSep: 55, rankSep: 130, edgeSep: 25 }).run();
+      if (isFirstLoad) {
+        cy.fit(undefined, 40);
+      }
+    } else {
+      // Same nodes/edges, only health/status data refreshed on this poll - update
+      // in place so the user's current pan/zoom is left completely untouched.
+      newElements.forEach((el) => {
+        const existing = cy.getElementById(el.data.id);
+        if (existing.length > 0) {
+          existing.data(el.data);
+          existing.classes(el.classes);
+        }
+      });
+    }
   }, [graph]);
 
-  return <div ref={containerRef} className="graph-canvas" />;
+  const zoomBy = (factor) => {
+    const cy = cyRef.current;
+    if (!cy) return;
+    const level = Math.max(0.02, Math.min(6, cy.zoom() * factor));
+    cy.zoom({ level, renderedPosition: { x: cy.width() / 2, y: cy.height() / 2 } });
+  };
+
+  const fitToScreen = () => {
+    cyRef.current && cyRef.current.fit(undefined, 40);
+  };
+
+  return (
+    <div className="graph-wrapper">
+      <div ref={containerRef} className="graph-canvas" />
+      <div className="zoom-controls">
+        <button onClick={() => zoomBy(1.3)} title="Zoom in" aria-label="Zoom in">+</button>
+        <button onClick={() => zoomBy(1 / 1.3)} title="Zoom out" aria-label="Zoom out">&minus;</button>
+        <button onClick={fitToScreen} title="Fit to screen" aria-label="Fit to screen">&#x26F6;</button>
+      </div>
+    </div>
+  );
 }
