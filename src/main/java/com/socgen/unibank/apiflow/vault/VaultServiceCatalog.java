@@ -28,8 +28,9 @@ public class VaultServiceCatalog implements ServiceCatalog {
 
     @Override
     public List<String> listServiceNames() {
+        String listPath = props.getKvMount() + "/metadata/" + props.getTrigram();
         try {
-            List<String> children = vaultTemplate.list(props.getKvMount() + "/metadata");
+            List<String> children = vaultTemplate.list(listPath);
             if (children == null) {
                 return Collections.emptyList();
             }
@@ -37,7 +38,7 @@ public class VaultServiceCatalog implements ServiceCatalog {
                     .map(name -> name.endsWith("/") ? name.substring(0, name.length() - 1) : name)
                     .toList();
         } catch (Exception e) {
-            log.warn("Failed to LIST services under {}/metadata: {}", props.getKvMount(), e.toString());
+            log.warn("Failed to LIST services under {}: {}", listPath, e.toString());
             return Collections.emptyList();
         }
     }
@@ -45,7 +46,7 @@ public class VaultServiceCatalog implements ServiceCatalog {
     @Override
     @SuppressWarnings("unchecked")
     public Map<String, Object> readConfig(String serviceName) {
-        String path = serviceName + "/" + props.getEnv() + "/" + props.getSecretName();
+        String path = props.getTrigram() + "/" + serviceName + "/" + props.getEnv() + "/" + props.getSecretName();
         try {
             Versioned<Map<String, Object>> versioned = vaultTemplate
                     .opsForVersionedKeyValue(props.getKvMount())

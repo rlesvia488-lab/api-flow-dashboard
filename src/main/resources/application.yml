@@ -15,7 +15,8 @@ vault:
   namespace: ${VAULT_NAMESPACE:}
   role-id: ${VAULT_ROLE_ID:}
   secret-id: ${VAULT_SECRET_ID:}
-  kv-mount: abb
+  kv-mount: secret
+  trigram: abb
   env: prd
   secret-name: default
 

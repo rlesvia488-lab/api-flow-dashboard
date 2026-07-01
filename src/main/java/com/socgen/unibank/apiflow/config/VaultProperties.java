@@ -25,10 +25,13 @@ public class VaultProperties {
     /** When false (default), the app runs in demo mode with synthetic services instead of calling Vault. */
     private boolean enabled = false;
 
-    /** KV v2 secrets engine (mount) name that holds the per-service configs. */
-    private String kvMount = "abb";
+    /** KV v2 secrets engine (mount) name, e.g. "secret". Not the trigram - see {@link #trigram}. */
+    private String kvMount = "secret";
 
-    /** Environment path segment: abb/<service>/<env>/default */
+    /** Path prefix inside the mount identifying your org/BU, e.g. "abb": secret/data/abb/<service>/<env>/default */
+    private String trigram = "abb";
+
+    /** Environment path segment: <trigram>/<service>/<env>/default */
     private String env = "prd";
 
     /** Leaf secret name under each service/env path. */
@@ -51,6 +54,9 @@ public class VaultProperties {
 
     public String getKvMount() { return kvMount; }
     public void setKvMount(String kvMount) { this.kvMount = kvMount; }
+
+    public String getTrigram() { return trigram; }
+    public void setTrigram(String trigram) { this.trigram = trigram; }
 
     public String getEnv() { return env; }
     public void setEnv(String env) { this.env = env; }

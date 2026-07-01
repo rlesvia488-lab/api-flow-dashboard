@@ -28,14 +28,26 @@ needed. Just also set:
 VAULT_ENABLED=true
 ```
 
-By default the app assumes the KV v2 mount is named `abb`, reads
-`<service>/prd/default` under it, and discovers service names via `LIST` on
-`abb/metadata/`. Override via `--dashboard.*`/`--vault.*` flags or
-`application.yml` if your mount name, environment segment, or key
-prefixes/suffixes differ (see `src/main/resources/application.yml`).
+The full Vault path looks like `secret/data/abb/account-identity-service/prd/default`,
+which breaks down as:
 
-The AppRole token only needs `read` on `abb/data/*` and `list` on
-`abb/metadata/*` — nothing else. The dashboard never stores or exposes the
+- `secret` — the KV v2 **mount** name (`vault.kv-mount`, default `secret`)
+- `abb` — a path prefix identifying your org/BU, referred to here as the
+  **trigram** (`vault.trigram`, default `abb`) — *not* a separate mount
+- `account-identity-service` — the service name (auto-discovered)
+- `prd/default` — environment + leaf secret name (`vault.env` / default `default`)
+
+By default the app assumes mount `secret`, trigram `abb`, env `prd`, and
+discovers service names via `LIST` on `secret/metadata/abb/`. Override any of
+these via `--vault.kv-mount=`, `--vault.trigram=`, `--vault.env=` flags or
+`application.yml` if your layout differs (see
+`src/main/resources/application.yml`).
+
+The AppRole token needs `read` on `secret/data/abb/*` and `list` on
+`secret/metadata/abb/*` — nothing else. This is almost always **broader than
+a normal per-service AppRole** (which is scoped to read only its own path), so
+plan on a dedicated AppRole/policy for this dashboard rather than reusing an
+existing service's credentials. The dashboard never stores or exposes the
 full config, only the extracted `*.endpoint` URLs; everything else (secrets,
 credentials, DB config) is discarded in memory right after extraction.
 
