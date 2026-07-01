@@ -101,7 +101,7 @@ public class HealthChecker {
         });
     }
 
-    private static HealthState classify(int code) {
+    static HealthState classify(int code) {
         if (code >= 200 && code < 300) {
             return HealthState.UP;
         }
@@ -111,7 +111,7 @@ public class HealthChecker {
         return HealthState.DOWN;
     }
 
-    private static String reasonFor(Throwable throwable) {
+    static String reasonFor(Throwable throwable) {
         Throwable cause = throwable.getCause() != null ? throwable.getCause() : throwable;
         String name = cause.getClass().getSimpleName();
         if (cause instanceof TimeoutException || cause instanceof java.net.http.HttpTimeoutException) {
