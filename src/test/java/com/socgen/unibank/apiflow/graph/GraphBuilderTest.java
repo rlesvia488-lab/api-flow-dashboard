@@ -2,7 +2,6 @@ package com.socgen.unibank.apiflow.graph;
 
 import com.socgen.unibank.apiflow.config.DashboardProperties;
 import com.socgen.unibank.apiflow.model.ApiEdge;
-import com.socgen.unibank.apiflow.model.NodeType;
 import com.socgen.unibank.apiflow.model.ServiceNode;
 import com.socgen.unibank.apiflow.vault.ServiceCatalog;
 import org.junit.jupiter.api.BeforeEach;
@@ -49,8 +48,8 @@ class GraphBuilderTest {
         Graph graph = graphBuilder.build(catalogOf(services));
 
         assertThat(graph.nodes()).contains(
-                new ServiceNode("accounts-service", "accounts-service", NodeType.INTERNAL),
-                new ServiceNode("account-identity-service", "account-identity-service", NodeType.INTERNAL)
+                new ServiceNode("accounts-service", "accounts-service"),
+                new ServiceNode("account-identity-service", "account-identity-service")
         );
         assertThat(graph.edges()).containsExactly(
                 new ApiEdge(
@@ -62,7 +61,7 @@ class GraphBuilderTest {
     }
 
     @Test
-    void build_marksUnresolvedTargetAsExternalNodeInsteadOfDropping() {
+    void build_dropsEndpointsThatDoNotResolveToAKnownService() {
         Map<String, Map<String, Object>> services = new LinkedHashMap<>();
         services.put("notifications-service", Map.of(
                 "unibank.services.sms.gateway.endpoint", "https://sms-gateway.example.com"
@@ -70,9 +69,9 @@ class GraphBuilderTest {
 
         Graph graph = graphBuilder.build(catalogOf(services));
 
-        assertThat(graph.nodes()).contains(new ServiceNode("external:sms.gateway", "sms.gateway", NodeType.EXTERNAL));
-        assertThat(graph.edges()).hasSize(1);
-        assertThat(graph.edges().get(0).target()).isEqualTo("external:sms.gateway");
+        assertThat(graph.nodes()).containsExactly(new ServiceNode("notifications-service", "notifications-service"));
+        assertThat(graph.edges()).isEmpty();
+        assertThat(graph.urls()).isEmpty();
     }
 
     @Test

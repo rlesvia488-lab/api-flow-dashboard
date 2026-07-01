@@ -32,7 +32,7 @@ function DetailPanel({ selectedNode, selectedEdge, onClose }) {
       {selectedNode && (
         <>
           <h3>{selectedNode.label.split('\n')[0]}</h3>
-          <p className="muted">{selectedNode.id.startsWith('external:') ? 'External / unresolved dependency' : 'Internal service'}</p>
+          <p className="muted">Service</p>
           {selectedNode.health && selectedNode.health !== 'none' && (
             <span className={`status-badge ${selectedNode.health}`}>{selectedNode.health}</span>
           )}
@@ -160,8 +160,6 @@ export default function App() {
           <div><span className="dot degraded" /> 3xx/401/403/404 - degraded</div>
           <div><span className="dot down" /> 5xx/timeout/dns/tls - down</div>
           <div><span className="dot unknown" /> not checked yet</div>
-          <div className="legend-node"><span className="box internal" /> internal service</div>
-          <div className="legend-node"><span className="box external" /> external / unresolved</div>
         </div>
       </main>
     </div>

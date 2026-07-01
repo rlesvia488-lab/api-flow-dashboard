@@ -10,8 +10,9 @@ import java.util.Map;
 /**
  * Canned service configs so the dashboard is demoable without live Vault
  * credentials. Mirrors the real shape (flat + nested keys, secrets that must
- * never reach the UI, several ".endpoint" keys per service, one dangling/dead
- * endpoint, one external SaaS dependency).
+ * never reach the UI, several ".endpoint" keys per service, a mix of healthy
+ * and failing targets, and one infra/component endpoint that must NOT show
+ * up in the graph since it isn't a service-to-service call).
  */
 @Component
 @ConditionalOnProperty(prefix = "vault", name = "enabled", havingValue = "false", matchIfMissing = true)
@@ -49,9 +50,7 @@ public class DemoServiceCatalog implements ServiceCatalog {
 
         configs.put("notifications-service", config(Map.of(
                 "logging.level.root", "INFO",
-                "unibank.services.bridge.amplitude.endpoint", "https://httpbingo.org/status/401",
-                // deliberately unresolvable, to demo the DNS-failure/DOWN state
-                "unibank.services.sms.gateway.endpoint", "https://sms-gateway.does-not-exist.invalid"
+                "unibank.services.bridge.amplitude.endpoint", "https://httpbingo.org/status/401"
         )));
 
         configs.put("bridge-amplitude-service", config(Map.of(

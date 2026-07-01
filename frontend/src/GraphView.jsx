@@ -49,7 +49,7 @@ function buildElements(graph) {
         label: summary ? `${n.label}\n${summary}` : n.label,
         health: agg.cls
       },
-      classes: [n.type === 'EXTERNAL' ? 'external' : 'internal', `health-${agg.cls}`].join(' ')
+      classes: `health-${agg.cls}`
     };
   });
 
@@ -110,15 +110,6 @@ const STYLE = [
   { selector: 'node.health-degraded', style: { 'border-color': COLORS.degraded, 'shadow-color': COLORS.degraded } },
   { selector: 'node.health-down', style: { 'border-color': COLORS.down, 'shadow-color': COLORS.down, 'shadow-blur': 26, 'shadow-opacity': 0.75 } },
   { selector: 'node.health-none', style: { 'border-color': '#3a4260', 'shadow-blur': 8, 'shadow-opacity': 0.3 } },
-  {
-    selector: 'node.external',
-    style: {
-      'background-color': '#232838',
-      'background-gradient-stop-colors': '#262c3f #171b28',
-      'border-style': 'dashed',
-      color: '#b7bccb'
-    }
-  },
   {
     selector: 'node:selected',
     style: { 'border-width': 4, 'border-color': '#ffd43b', 'shadow-color': '#ffd43b', 'shadow-blur': 30, 'shadow-opacity': 0.9 }

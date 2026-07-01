@@ -1,7 +1,6 @@
 package com.socgen.unibank.apiflow.graph;
 
 import com.socgen.unibank.apiflow.model.ApiEdge;
-import com.socgen.unibank.apiflow.model.NodeType;
 import com.socgen.unibank.apiflow.model.ServiceNode;
 import com.socgen.unibank.apiflow.vault.ServiceCatalog;
 import org.springframework.stereotype.Component;
@@ -34,7 +33,7 @@ public class GraphBuilder {
 
         Map<String, ServiceNode> nodes = new LinkedHashMap<>();
         for (String name : serviceNames) {
-            nodes.put(name, new ServiceNode(name, name, NodeType.INTERNAL));
+            nodes.put(name, new ServiceNode(name, name));
         }
 
         List<ApiEdge> edges = new ArrayList<>();
@@ -46,16 +45,14 @@ public class GraphBuilder {
                 String targetKey = matcher.extractTargetKey(raw.keyPath());
                 String matched = matcher.matchService(targetKey, normalizedToOriginal);
 
-                String targetNodeId;
-                if (matched != null) {
-                    targetNodeId = matched;
-                } else {
-                    targetNodeId = "external:" + targetKey;
-                    nodes.putIfAbsent(targetNodeId, new ServiceNode(targetNodeId, targetKey, NodeType.EXTERNAL));
+                // Only graph calls between known services - a target that doesn't
+                // resolve to a discovered service is dropped, not shown as a node.
+                if (matched == null) {
+                    continue;
                 }
 
-                String edgeId = source + "->" + targetNodeId + "#" + raw.keyPath();
-                edges.add(new ApiEdge(edgeId, source, targetNodeId, raw.keyPath(), raw.url()));
+                String edgeId = source + "->" + matched + "#" + raw.keyPath();
+                edges.add(new ApiEdge(edgeId, source, matched, raw.keyPath(), raw.url()));
                 urls.add(raw.url());
             }
         }

@@ -204,16 +204,6 @@ body {
 .legend .dot.degraded { background: #ffb020; box-shadow: 0 0 6px 1px rgba(255, 176, 32, 0.7); }
 .legend .dot.down { background: #ff4d4f; box-shadow: 0 0 6px 1px rgba(255, 77, 79, 0.7); }
 .legend .dot.unknown { background: #6b7488; }
-.legend-node { margin-top: 4px; }
-.legend .box {
-  display: inline-block;
-  width: 14px; height: 10px;
-  border-radius: 3px;
-  margin-right: 6px;
-  vertical-align: middle;
-}
-.legend .box.internal { background: #1f2a44; border: 2px solid #4c6ef5; }
-.legend .box.external { background: #2b2f3a; border: 2px dashed #8a8f98; }
 
 .detail-panel {
   position: absolute;

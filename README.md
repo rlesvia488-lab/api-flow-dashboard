@@ -1,10 +1,15 @@
 # API Flow Dashboard
 
 Discovers every service under a Vault KV v2 engine, extracts each service's
-outbound `*.endpoint` config keys, resolves them back to other known services
-(or marks them external), live-health-checks every discovered URL, and renders
-the result as a call graph. Ships as a single Spring Boot jar with the React
-UI baked into `static/`.
+outbound `*.endpoint` config keys, resolves them back to other known services,
+live-health-checks every discovered URL, and renders the result as a call
+graph. Ships as a single Spring Boot jar with the React UI baked into
+`static/`.
+
+Only calls between known, discovered services are graphed. An endpoint whose
+target doesn't resolve to a discovered service (a third-party SaaS dependency,
+a typo, a service outside this Vault engine) is dropped, not shown as a node —
+this is a graph of your APIs calling each other, nothing else.
 
 ## Run in demo mode (no Vault needed)
 
@@ -14,8 +19,7 @@ UI baked into `static/`.
 
 Open http://localhost:8080. Demo mode (`vault.enabled=false`, the default)
 serves six canned services with a realistic mix of healthy, degraded (401),
-down (503), timed-out and DNS-failing endpoints so the color coding is
-visible immediately.
+down (503) and timed-out endpoints so the color coding is visible immediately.
 
 ## Run against real Vault
 
@@ -53,14 +57,17 @@ credentials, DB config) is discarded in memory right after extraction.
 
 ## How matching works
 
-A key like `unibank.services.accounts.internal.endpoint` is stripped of a
-configurable prefix (`unibank.services.`) and the `.endpoint` suffix, leaving
-`accounts.internal`. Each known service name (e.g. `accounts-service`) is
-normalized the same way (`-service` suffix stripped, `-`/`_` replaced with
-`.`) to `accounts`. The two are matched by longest shared dotted prefix. If
-nothing matches, the target is rendered as an external/unresolved node
-(dashed border) instead of being dropped — useful for spotting calls to
-third-party SaaS dependencies that aren't part of your Vault-managed fleet.
+Only keys under a configured service-call prefix (`dashboard.strip-prefixes`,
+default `unibank.services.`/`unibank.service.`) are considered at all —
+infrastructure/backing config like `unibank.components.s3.private.endpoint`
+is never extracted, since it isn't an API-to-API call.
+
+A key like `unibank.services.accounts.internal.endpoint` is stripped of that
+prefix and the `.endpoint` suffix, leaving `accounts.internal`. Each known
+service name (e.g. `accounts-service`) is normalized the same way (`-service`
+suffix stripped, `-`/`_` replaced with `.`) to `accounts`. The two are matched
+by longest shared dotted prefix. If nothing matches a known service, the
+endpoint is dropped from the graph entirely.
 
 ## Building
 
