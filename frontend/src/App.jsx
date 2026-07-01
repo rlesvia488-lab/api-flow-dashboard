@@ -24,47 +24,98 @@ function summarize(graph) {
   return counts;
 }
 
-function DetailPanel({ selectedNode, selectedEdge, onClose }) {
-  if (!selectedNode && !selectedEdge) return null;
+function statusClass(status) {
+  if (!status || status.state === 'UNKNOWN') return 'unknown';
+  return status.state.toLowerCase();
+}
+
+function statusLabel(status) {
+  if (!status || status.state === 'UNKNOWN') return 'checking...';
+  return status.statusCode ?? status.errorReason ?? 'checking...';
+}
+
+function StatusPill({ status }) {
+  return <span className={`status-badge ${statusClass(status)}`}>{statusLabel(status)}</span>;
+}
+
+function CallRow({ edge, otherServiceLabel }) {
   return (
-    <div className="detail-panel">
-      <button className="close-btn" onClick={onClose}>x</button>
-      {selectedNode && (
-        <>
-          <h3>{selectedNode.label.split('\n')[0]}</h3>
-          <p className="muted">Service</p>
-          {selectedNode.health && selectedNode.health !== 'none' && (
-            <span className={`status-badge ${selectedNode.health}`}>{selectedNode.health}</span>
-          )}
-        </>
-      )}
-      {selectedEdge && (
-        <>
-          <h3>{selectedEdge.source} &rarr; {selectedEdge.target}</h3>
-          <p className="muted">config key</p>
-          <code className="key-path">{selectedEdge.keyPath}</code>
-          <p className="muted" style={{ marginTop: 10 }}>endpoint</p>
-          <a href={selectedEdge.url} target="_blank" rel="noreferrer" className="url-link">{selectedEdge.url}</a>
-          <div className="status-row">
-            <span className={`status-badge ${(selectedEdge.errorReason && !selectedEdge.statusCode) ? 'down' : (selectedEdge.statusCode >= 200 && selectedEdge.statusCode < 300 ? 'up' : selectedEdge.statusCode ? 'degraded' : 'unknown')}`}>
-              {selectedEdge.statusCode ?? selectedEdge.errorReason ?? 'checking...'}
-            </span>
-            {selectedEdge.latencyMs != null && selectedEdge.latencyMs >= 0 && (
-              <span className="latency">{selectedEdge.latencyMs} ms</span>
-            )}
-          </div>
-        </>
-      )}
+    <div className="call-row">
+      <div className="call-row-main">
+        <span className="call-row-name">{otherServiceLabel}</span>
+        <StatusPill status={edge.status} />
+      </div>
+      <div className="call-row-meta">
+        <code className="call-row-key">{edge.keyPath}</code>
+        {edge.status && edge.status.latencyMs >= 0 && (
+          <span className="call-row-latency">{edge.status.latencyMs} ms</span>
+        )}
+      </div>
+      <a href={edge.url} target="_blank" rel="noreferrer" className="call-row-url">{edge.url}</a>
     </div>
   );
+}
+
+function NodeDetail({ info, onClose }) {
+  const { node, outbound, inbound } = info;
+  return (
+    <div className="detail-panel">
+      <button className="close-btn" onClick={onClose} aria-label="Close">&times;</button>
+      <h3>{node.label}</h3>
+      <p className="muted">
+        Service &middot; {outbound.length} call{outbound.length === 1 ? '' : 's'} &middot; {inbound.length} caller{inbound.length === 1 ? '' : 's'}
+      </p>
+
+      <div className="detail-section">
+        <div className="detail-section-title">Calls ({outbound.length})</div>
+        <div className="call-list">
+          {outbound.length === 0 && <p className="muted small">No outbound calls</p>}
+          {outbound.map((e) => <CallRow key={e.id} edge={e} otherServiceLabel={e.target} />)}
+        </div>
+      </div>
+
+      <div className="detail-section">
+        <div className="detail-section-title">Called by ({inbound.length})</div>
+        <div className="call-list">
+          {inbound.length === 0 && <p className="muted small">No known callers</p>}
+          {inbound.map((e) => <CallRow key={e.id} edge={e} otherServiceLabel={e.source} />)}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function EdgeDetail({ edge, onClose }) {
+  return (
+    <div className="detail-panel">
+      <button className="close-btn" onClick={onClose} aria-label="Close">&times;</button>
+      <h3>{edge.source} &rarr; {edge.target}</h3>
+      <p className="muted">config key</p>
+      <code className="key-path">{edge.keyPath}</code>
+      <p className="muted" style={{ marginTop: 10 }}>endpoint</p>
+      <a href={edge.url} target="_blank" rel="noreferrer" className="url-link">{edge.url}</a>
+      <div className="status-row">
+        <StatusPill status={edge.status} />
+        {edge.status && edge.status.latencyMs >= 0 && (
+          <span className="latency">{edge.status.latencyMs} ms</span>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function DetailPanel({ selectedNodeInfo, selectedEdgeInfo, onClose }) {
+  if (selectedNodeInfo) return <NodeDetail info={selectedNodeInfo} onClose={onClose} />;
+  if (selectedEdgeInfo) return <EdgeDetail edge={selectedEdgeInfo} onClose={onClose} />;
+  return null;
 }
 
 export default function App() {
   const [graph, setGraph] = useState(null);
   const [error, setError] = useState(null);
   const [search, setSearch] = useState('');
-  const [selectedNode, setSelectedNode] = useState(null);
-  const [selectedEdge, setSelectedEdge] = useState(null);
+  const [selectedNodeId, setSelectedNodeId] = useState(null);
+  const [selectedEdgeId, setSelectedEdgeId] = useState(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -109,7 +160,42 @@ export default function App() {
     };
   }, [graph, search]);
 
+  // Derived from the full (unfiltered) graph every render, so the panel stays
+  // correct across the 5s poll and isn't affected by the search filter hiding
+  // the selected item from view.
+  const selectedNodeInfo = useMemo(() => {
+    if (!selectedNodeId || !graph) return null;
+    const node = graph.nodes.find((n) => n.id === selectedNodeId);
+    if (!node) return null;
+    const withStatus = (e) => ({ ...e, status: graph.statusByUrl[e.url] });
+    return {
+      node,
+      outbound: graph.edges.filter((e) => e.source === selectedNodeId).map(withStatus),
+      inbound: graph.edges.filter((e) => e.target === selectedNodeId).map(withStatus)
+    };
+  }, [selectedNodeId, graph]);
+
+  const selectedEdgeInfo = useMemo(() => {
+    if (!selectedEdgeId || !graph) return null;
+    const edge = graph.edges.find((e) => e.id === selectedEdgeId);
+    if (!edge) return null;
+    return { ...edge, status: graph.statusByUrl[edge.url] };
+  }, [selectedEdgeId, graph]);
+
   const counts = summarize(graph);
+
+  const selectNode = (id) => {
+    setSelectedNodeId(id);
+    setSelectedEdgeId(null);
+  };
+  const selectEdge = (id) => {
+    setSelectedEdgeId(id);
+    setSelectedNodeId(null);
+  };
+  const closeDetail = () => {
+    setSelectedNodeId(null);
+    setSelectedEdgeId(null);
+  };
 
   return (
     <div className="app">
@@ -143,15 +229,15 @@ export default function App() {
 
       <main className="main-area">
         {filteredGraph ? (
-          <GraphView graph={filteredGraph} onSelectNode={setSelectedNode} onSelectEdge={setSelectedEdge} />
+          <GraphView graph={filteredGraph} onSelectNode={selectNode} onSelectEdge={selectEdge} />
         ) : (
           <div className="loading">Loading graph...</div>
         )}
 
         <DetailPanel
-          selectedNode={selectedNode}
-          selectedEdge={selectedEdge}
-          onClose={() => { setSelectedNode(null); setSelectedEdge(null); }}
+          selectedNodeInfo={selectedNodeInfo}
+          selectedEdgeInfo={selectedEdgeInfo}
+          onClose={closeDetail}
         />
 
         <div className="legend">

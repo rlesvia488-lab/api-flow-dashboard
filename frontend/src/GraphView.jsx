@@ -97,22 +97,17 @@ const STYLE = [
       'text-wrap': 'wrap',
       'text-max-width': '130px',
       'line-height': 1.5,
-      'shadow-blur': 18,
-      'shadow-opacity': 0.55,
-      'shadow-color': COLORS.unknown,
-      'shadow-offset-x': 0,
-      'shadow-offset-y': 0,
-      'transition-property': 'border-color, shadow-color, shadow-blur',
+      'transition-property': 'border-color',
       'transition-duration': 300
     }
   },
-  { selector: 'node.health-up', style: { 'border-color': COLORS.up, 'shadow-color': COLORS.up } },
-  { selector: 'node.health-degraded', style: { 'border-color': COLORS.degraded, 'shadow-color': COLORS.degraded } },
-  { selector: 'node.health-down', style: { 'border-color': COLORS.down, 'shadow-color': COLORS.down, 'shadow-blur': 26, 'shadow-opacity': 0.75 } },
-  { selector: 'node.health-none', style: { 'border-color': '#3a4260', 'shadow-blur': 8, 'shadow-opacity': 0.3 } },
+  { selector: 'node.health-up', style: { 'border-color': COLORS.up } },
+  { selector: 'node.health-degraded', style: { 'border-color': COLORS.degraded } },
+  { selector: 'node.health-down', style: { 'border-color': COLORS.down, 'border-width': 3.5 } },
+  { selector: 'node.health-none', style: { 'border-color': '#3a4260' } },
   {
     selector: 'node:selected',
-    style: { 'border-width': 4, 'border-color': '#ffd43b', 'shadow-color': '#ffd43b', 'shadow-blur': 30, 'shadow-opacity': 0.9 }
+    style: { 'border-width': 4, 'border-color': '#ffd43b' }
   },
   {
     selector: 'edge',
@@ -128,18 +123,14 @@ const STYLE = [
       'text-background-opacity': 1,
       'text-background-shape': 'round-rectangle',
       'text-background-padding': '4px',
-      'text-rotation': 'autorotate',
-      'shadow-blur': 12,
-      'shadow-opacity': 0.6,
-      'shadow-offset-x': 0,
-      'shadow-offset-y': 0
+      'text-rotation': 'autorotate'
     }
   },
   {
     selector: 'edge.up',
     style: {
       'line-color': COLORS.up, 'target-arrow-color': COLORS.up, 'text-background-color': COLORS.up,
-      color: '#06210c', 'shadow-color': COLORS.up,
+      color: '#06210c',
       'line-style': 'dashed', 'line-dash-pattern': [8, 6]
     }
   },
@@ -147,7 +138,7 @@ const STYLE = [
     selector: 'edge.degraded',
     style: {
       'line-color': COLORS.degraded, 'target-arrow-color': COLORS.degraded, 'text-background-color': COLORS.degraded,
-      color: '#231600', 'shadow-color': COLORS.degraded,
+      color: '#231600',
       'line-style': 'dashed', 'line-dash-pattern': [8, 6]
     }
   },
@@ -155,7 +146,7 @@ const STYLE = [
     selector: 'edge.down',
     style: {
       'line-color': COLORS.down, 'target-arrow-color': COLORS.down, 'text-background-color': COLORS.down,
-      color: '#2b0000', 'shadow-color': COLORS.down, 'shadow-blur': 16, 'shadow-opacity': 0.8,
+      color: '#2b0000',
       'line-style': 'dashed', 'line-dash-pattern': [3, 4], width: 3.5
     }
   },
@@ -163,7 +154,7 @@ const STYLE = [
     selector: 'edge.unknown',
     style: {
       'line-color': COLORS.unknown, 'target-arrow-color': COLORS.unknown, 'text-background-color': COLORS.unknown,
-      color: '#fff', 'shadow-opacity': 0.2, 'line-style': 'dotted'
+      color: '#fff', 'line-style': 'dotted'
     }
   },
   {
@@ -185,8 +176,8 @@ export default function GraphView({ graph, onSelectEdge, onSelectNode }) {
     });
     cyRef.current = cy;
 
-    cy.on('tap', 'edge', (evt) => onSelectEdge && onSelectEdge(evt.target.data()));
-    cy.on('tap', 'node', (evt) => onSelectNode && onSelectNode(evt.target.data()));
+    cy.on('tap', 'edge', (evt) => onSelectEdge && onSelectEdge(evt.target.id()));
+    cy.on('tap', 'node', (evt) => onSelectNode && onSelectNode(evt.target.id()));
     cy.on('tap', (evt) => {
       if (evt.target === cy) {
         onSelectEdge && onSelectEdge(null);
@@ -204,7 +195,29 @@ export default function GraphView({ graph, onSelectEdge, onSelectNode }) {
     };
     rafRef.current = requestAnimationFrame(animate);
 
+    // Cytoscape reads the container's size at construction time. If the tab
+    // is backgrounded/hidden at that point (e.g. opened in a background tab),
+    // some browsers don't allocate a real canvas backing store until the
+    // document actually becomes visible, leaving the canvas at 0x0 no matter
+    // how many times resize() is called beforehand. Retry on construction (in
+    // case layout just hadn't settled yet) and again on visibilitychange
+    // (the case a backgrounded tab actually needs), plus ResizeObserver for
+    // any later container size change.
+    cy.resize();
+    queueMicrotask(() => cy.resize());
+    setTimeout(() => cy.resize(), 0);
+
+    const onVisible = () => {
+      if (!document.hidden) cy.resize();
+    };
+    document.addEventListener('visibilitychange', onVisible);
+
+    const resizeObserver = new ResizeObserver(() => cy.resize());
+    resizeObserver.observe(containerRef.current);
+
     return () => {
+      document.removeEventListener('visibilitychange', onVisible);
+      resizeObserver.disconnect();
       cancelAnimationFrame(rafRef.current);
       cy.destroy();
     };

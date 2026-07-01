@@ -11,6 +11,10 @@ target doesn't resolve to a discovered service (a third-party SaaS dependency,
 a typo, a service outside this Vault engine) is dropped, not shown as a node —
 this is a graph of your APIs calling each other, nothing else.
 
+Click any service to see everything it calls and everything that calls it,
+each with live status/latency; click any arrow for that specific call's
+config key, endpoint and status.
+
 ## Run in demo mode (no Vault needed)
 
 ```
@@ -89,3 +93,13 @@ All in `application.yml` under `dashboard.*`:
 - `health-check-interval` (default 20s) — how often endpoints are re-probed
 - `health-check-timeout` (default 3s)
 - `trust-all-certs-for-health-checks` (default true) — health checks are read-only reachability probes; internal PRD certs are often self-signed
+
+## GraphQL endpoints
+
+A GraphQL endpoint (`.../graphql`) answers a bare health-check GET with
+400/405 even when perfectly healthy, since GraphQL only accepts POST queries.
+Before probing, a trailing `/graphql` (any case, with or without a trailing
+slash) is stripped and the origin underneath is checked instead — e.g.
+`https://abb-bridge-service.example.com/graphql` is probed at
+`https://abb-bridge-service.example.com`. This only affects the health check;
+the graph still displays and links to the real configured URL.

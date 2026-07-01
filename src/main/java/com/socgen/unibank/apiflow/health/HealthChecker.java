@@ -77,7 +77,7 @@ public class HealthChecker {
         Instant start = Instant.now();
         HttpRequest request;
         try {
-            request = HttpRequest.newBuilder(URI.create(url))
+            request = HttpRequest.newBuilder(URI.create(stripGraphqlSuffix(url)))
                     .timeout(props.getHealthCheckTimeout())
                     .GET()
                     .build();
@@ -99,6 +99,20 @@ public class HealthChecker {
             HealthState state = classify(code);
             statusByUrl.put(url, new EndpointStatus(url, state, code, null, latencyMs, Instant.now()));
         });
+    }
+
+    /**
+     * A configured "*.endpoint" GraphQL URL (e.g. ".../api/graphql") answers a bare
+     * GET with 400/405 even when perfectly healthy, since GraphQL only accepts POST
+     * queries. Probing the origin without the "/graphql" suffix gives a meaningful
+     * up/down signal instead of a false DOWN on every healthy GraphQL service.
+     */
+    static String stripGraphqlSuffix(String url) {
+        String trimmed = url.endsWith("/") ? url.substring(0, url.length() - 1) : url;
+        if (trimmed.length() > 8 && trimmed.regionMatches(true, trimmed.length() - 8, "/graphql", 0, 8)) {
+            return trimmed.substring(0, trimmed.length() - 8);
+        }
+        return url;
     }
 
     static HealthState classify(int code) {

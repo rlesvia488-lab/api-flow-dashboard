@@ -67,4 +67,26 @@ class HealthCheckerTest {
     void reasonFor_fallsBackToExceptionSimpleName() {
         assertThat(HealthChecker.reasonFor(new IllegalStateException("boom"))).isEqualTo("IllegalStateException");
     }
+
+    @ParameterizedTest
+    @CsvSource({
+            "https://abb-bridge-service.example.com/graphql, https://abb-bridge-service.example.com",
+            "https://abb-bridge-service.example.com/graphql/, https://abb-bridge-service.example.com",
+            "https://abb-bridge-service.example.com/GraphQL, https://abb-bridge-service.example.com",
+            "https://abb-bridge-service.example.com/api/graphql, https://abb-bridge-service.example.com/api"
+    })
+    void stripGraphqlSuffix_removesTrailingGraphqlSegment(String input, String expected) {
+        assertThat(HealthChecker.stripGraphqlSuffix(input)).isEqualTo(expected);
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+            "https://abb-accounts-service.example.com",
+            "https://abb-accounts-service.example.com/",
+            "https://abb-accounts-service.example.com/api",
+            "https://abb-accounts-service.example.com/graphql-status"
+    })
+    void stripGraphqlSuffix_leavesNonGraphqlUrlsUntouched(String input) {
+        assertThat(HealthChecker.stripGraphqlSuffix(input)).isEqualTo(input);
+    }
 }

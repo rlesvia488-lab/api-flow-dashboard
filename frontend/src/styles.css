@@ -209,13 +209,16 @@ body {
   position: absolute;
   right: 16px;
   top: 16px;
-  width: 300px;
-  background: rgba(15, 20, 34, 0.9);
+  width: 340px;
+  max-height: calc(100% - 32px);
+  overflow-y: auto;
+  background: rgba(15, 20, 34, 0.94);
   backdrop-filter: blur(14px);
   border: 1px solid rgba(76, 110, 245, 0.3);
   border-radius: 12px;
   padding: 16px;
   box-shadow: 0 8px 40px rgba(0, 0, 0, 0.5);
+  z-index: 6;
 }
 .detail-panel h3 { margin: 0 0 6px; font-size: 14px; }
 .detail-panel .muted { color: #8a93a8; font-size: 11px; margin: 8px 0 2px; }
@@ -252,9 +255,86 @@ body {
   font-size: 13px;
   padding: 4px 10px;
   border-radius: 20px;
+  white-space: nowrap;
 }
 .status-badge.up { background: #37b24d; color: #06210c; }
 .status-badge.degraded { background: #f59f00; color: #231600; }
 .status-badge.down { background: #e03131; color: #fff; }
 .status-badge.unknown { background: #5c6370; color: #fff; }
 .latency { font-size: 11px; color: #8a93a8; }
+
+.detail-section {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(76, 110, 245, 0.2);
+}
+.detail-section-title {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #8a93a8;
+  margin-bottom: 8px;
+}
+.detail-panel .muted.small { font-size: 11px; margin: 0; }
+
+.call-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 220px;
+  overflow-y: auto;
+}
+.call-row {
+  background: rgba(76, 110, 245, 0.08);
+  border: 1px solid rgba(76, 110, 245, 0.18);
+  border-radius: 8px;
+  padding: 8px 10px;
+}
+.call-row-main {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.call-row-name {
+  font-size: 13px;
+  font-weight: 500;
+  color: #e8ecf1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.call-row .status-badge {
+  font-size: 11px;
+  padding: 2px 8px;
+  flex-shrink: 0;
+}
+.call-row-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 4px;
+}
+.call-row-key {
+  font-size: 10px;
+  color: #a5b4fc;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.call-row-latency {
+  font-size: 10px;
+  color: #8a93a8;
+  flex-shrink: 0;
+}
+.call-row-url {
+  display: block;
+  margin-top: 4px;
+  font-size: 10px;
+  color: #74c0fc;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
