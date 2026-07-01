@@ -6,7 +6,7 @@ plugins {
 }
 
 group = 'com.socgen.unibank'
-version = '0.5.0'
+version = '0.5.1'
 description = 'Vault-driven API call-graph dashboard (config discovery + live health checks)'
 
 java {

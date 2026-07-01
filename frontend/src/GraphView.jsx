@@ -85,6 +85,9 @@ const STYLE = [
       'font-size': 12,
       'font-weight': 500,
       color: '#eef1f8',
+      'text-outline-width': 2,
+      'text-outline-color': '#0b0f19',
+      'text-outline-opacity': 0.8,
       'background-color': '#141b30',
       'background-gradient-stop-colors': '#1b2542 #0e1424',
       'background-gradient-direction': 'to-bottom-right',
@@ -172,7 +175,11 @@ export default function GraphView({ graph, onSelectEdge, onSelectNode }) {
     const cy = cytoscape({
       container: containerRef.current,
       style: STYLE,
-      wheelSensitivity: 0.2
+      // Default wheel sensitivity - a custom value makes zoom increments
+      // unpredictable across different mice/trackpads, making it easy to
+      // overshoot into an unreadable zoom level with a couple of scroll ticks.
+      minZoom: 0.15,
+      maxZoom: 4
     });
     cyRef.current = cy;
 
@@ -278,7 +285,7 @@ export default function GraphView({ graph, onSelectEdge, onSelectNode }) {
   const zoomBy = (factor) => {
     const cy = cyRef.current;
     if (!cy) return;
-    const level = Math.max(0.02, Math.min(6, cy.zoom() * factor));
+    const level = Math.max(0.15, Math.min(4, cy.zoom() * factor));
     cy.zoom({ level, renderedPosition: { x: cy.width() / 2, y: cy.height() / 2 } });
   };
 
