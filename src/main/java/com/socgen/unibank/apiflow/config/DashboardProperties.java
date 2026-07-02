@@ -19,6 +19,12 @@ public class DashboardProperties {
     /** Suffixes stripped from a Vault service folder name when normalizing it for matching. */
     private List<String> serviceNameSuffixes = List.of("-service", "_service", ".service");
 
+    /** Endpoint URLs starting with any of these prefixes are ignored entirely (case-insensitive). */
+    private List<String> excludedUrlPrefixes = List.of("https://pvip");
+
+    /** Service names ignored entirely - no node, no edges, no config read (case-insensitive). */
+    private List<String> excludedServices = List.of("VAULT_L1");
+
     private Duration configRefreshInterval = Duration.ofSeconds(60);
 
     private Duration healthCheckInterval = Duration.ofSeconds(20);
@@ -36,6 +42,12 @@ public class DashboardProperties {
 
     public List<String> getServiceNameSuffixes() { return serviceNameSuffixes; }
     public void setServiceNameSuffixes(List<String> serviceNameSuffixes) { this.serviceNameSuffixes = serviceNameSuffixes; }
+
+    public List<String> getExcludedUrlPrefixes() { return excludedUrlPrefixes; }
+    public void setExcludedUrlPrefixes(List<String> excludedUrlPrefixes) { this.excludedUrlPrefixes = excludedUrlPrefixes; }
+
+    public List<String> getExcludedServices() { return excludedServices; }
+    public void setExcludedServices(List<String> excludedServices) { this.excludedServices = excludedServices; }
 
     public Duration getConfigRefreshInterval() { return configRefreshInterval; }
     public void setConfigRefreshInterval(Duration configRefreshInterval) { this.configRefreshInterval = configRefreshInterval; }

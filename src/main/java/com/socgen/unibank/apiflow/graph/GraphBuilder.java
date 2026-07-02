@@ -1,5 +1,6 @@
 package com.socgen.unibank.apiflow.graph;
 
+import com.socgen.unibank.apiflow.config.DashboardProperties;
 import com.socgen.unibank.apiflow.model.ApiEdge;
 import com.socgen.unibank.apiflow.model.ServiceNode;
 import com.socgen.unibank.apiflow.vault.ServiceCatalog;
@@ -17,14 +18,18 @@ public class GraphBuilder {
 
     private final EndpointExtractor extractor;
     private final ServiceNameMatcher matcher;
+    private final DashboardProperties props;
 
-    public GraphBuilder(EndpointExtractor extractor, ServiceNameMatcher matcher) {
+    public GraphBuilder(EndpointExtractor extractor, ServiceNameMatcher matcher, DashboardProperties props) {
         this.extractor = extractor;
         this.matcher = matcher;
+        this.props = props;
     }
 
     public Graph build(ServiceCatalog catalog) {
-        List<String> serviceNames = catalog.listServiceNames();
+        List<String> serviceNames = catalog.listServiceNames().stream()
+                .filter(name -> !isExcludedService(name))
+                .toList();
 
         Map<String, String> normalizedToOriginal = new LinkedHashMap<>();
         for (String name : serviceNames) {
@@ -58,5 +63,14 @@ public class GraphBuilder {
         }
 
         return new Graph(List.copyOf(nodes.values()), List.copyOf(edges), Set.copyOf(urls));
+    }
+
+    private boolean isExcludedService(String serviceName) {
+        for (String excluded : props.getExcludedServices()) {
+            if (serviceName.equalsIgnoreCase(excluded)) {
+                return true;
+            }
+        }
+        return false;
     }
 }

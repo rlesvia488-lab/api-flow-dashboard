@@ -92,4 +92,17 @@ class EndpointExtractorTest {
         assertThat(found).hasSize(1);
         assertThat(found).noneMatch(e -> e.url().contains("AKIA") || e.url().contains("super-secret"));
     }
+
+    @Test
+    void extract_ignoresExcludedUrlPrefixesCaseInsensitively() {
+        Map<String, Object> config = new LinkedHashMap<>();
+        config.put("unibank.services.pvip.thing.endpoint", "https://pvip-internal.example.com");
+        config.put("unibank.services.pvip.other.endpoint", "HTTPS://PVIP-CAPS.example.com");
+        config.put("unibank.services.accounts.endpoint", "https://accounts.example.com");
+
+        List<EndpointExtractor.RawEndpoint> found = extractor.extract(config);
+
+        assertThat(found).extracting(EndpointExtractor.RawEndpoint::url)
+                .containsExactly("https://accounts.example.com");
+    }
 }

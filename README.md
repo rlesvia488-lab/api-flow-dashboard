@@ -59,6 +59,18 @@ existing service's credentials. The dashboard never stores or exposes the
 full config, only the extracted `*.endpoint` URLs; everything else (secrets,
 credentials, DB config) is discarded in memory right after extraction.
 
+## Excluding URLs and services
+
+Two exclusion lists under `dashboard.*` (both case-insensitive):
+
+- `excluded-url-prefixes` (default `https://pvip`) — any endpoint URL starting
+  with one of these is ignored entirely, as if it were never in the config.
+- `excluded-services` (default `VAULT_L1`) — any service with one of these
+  names is ignored entirely: no node, no config read, no edges in or out.
+
+Add more via `application.yml` or `--dashboard.excluded-url-prefixes[1]=...`
+/ `--dashboard.excluded-services[1]=...` flags.
+
 ## How matching works
 
 Only keys under a configured service-call prefix (`dashboard.strip-prefixes`,

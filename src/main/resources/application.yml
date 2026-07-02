@@ -29,6 +29,10 @@ dashboard:
     - "-service"
     - "_service"
     - ".service"
+  excluded-url-prefixes:
+    - "https://pvip"
+  excluded-services:
+    - "VAULT_L1"
   config-refresh-interval: 60s
   health-check-interval: 20s
   health-check-timeout: 3s

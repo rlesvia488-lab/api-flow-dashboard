@@ -49,7 +49,8 @@ public class EndpointExtractor {
             } else if (value instanceof String str
                     && path.endsWith(props.getEndpointKeySuffix())
                     && hasServiceCallPrefix(path)
-                    && looksLikeUrl(str)) {
+                    && looksLikeUrl(str)
+                    && !isExcludedUrl(str)) {
                 found.add(new RawEndpoint(path, str));
             }
         }
@@ -66,5 +67,14 @@ public class EndpointExtractor {
 
     private boolean looksLikeUrl(String value) {
         return value.startsWith("http://") || value.startsWith("https://");
+    }
+
+    private boolean isExcludedUrl(String url) {
+        for (String prefix : props.getExcludedUrlPrefixes()) {
+            if (url.regionMatches(true, 0, prefix, 0, prefix.length())) {
+                return true;
+            }
+        }
+        return false;
     }
 }

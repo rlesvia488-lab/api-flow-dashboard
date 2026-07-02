@@ -20,7 +20,7 @@ class GraphBuilderTest {
     @BeforeEach
     void setUp() {
         DashboardProperties props = new DashboardProperties();
-        graphBuilder = new GraphBuilder(new EndpointExtractor(props), new ServiceNameMatcher(props));
+        graphBuilder = new GraphBuilder(new EndpointExtractor(props), new ServiceNameMatcher(props), props);
     }
 
     private static ServiceCatalog catalogOf(Map<String, Map<String, Object>> services) {
@@ -81,5 +81,32 @@ class GraphBuilderTest {
         assertThat(graph.nodes()).isEmpty();
         assertThat(graph.edges()).isEmpty();
         assertThat(graph.urls()).isEmpty();
+    }
+
+    @Test
+    void build_excludesConfiguredServiceEntirely() {
+        Map<String, Map<String, Object>> services = new LinkedHashMap<>();
+        services.put("VAULT_L1", Map.of(
+                "unibank.services.accounts.internal.endpoint", "https://accounts.example.com"
+        ));
+        services.put("accounts-service", Map.of(
+                "unibank.services.vault.l1.endpoint", "https://vault-l1.example.com"
+        ));
+
+        Graph graph = graphBuilder.build(catalogOf(services));
+
+        assertThat(graph.nodes()).containsExactly(new ServiceNode("accounts-service", "accounts-service"));
+        assertThat(graph.edges()).isEmpty();
+        assertThat(graph.urls()).isEmpty();
+    }
+
+    @Test
+    void build_excludedServiceMatchIsCaseInsensitive() {
+        Map<String, Map<String, Object>> services = new LinkedHashMap<>();
+        services.put("vault_l1", Map.of());
+
+        Graph graph = graphBuilder.build(catalogOf(services));
+
+        assertThat(graph.nodes()).isEmpty();
     }
 }
