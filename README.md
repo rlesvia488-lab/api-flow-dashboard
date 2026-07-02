@@ -71,6 +71,31 @@ Two exclusion lists under `dashboard.*` (both case-insensitive):
 Add more via `application.yml` or `--dashboard.excluded-url-prefixes[1]=...`
 / `--dashboard.excluded-services[1]=...` flags.
 
+## Bridge/connector country flows
+
+Some services expose per-country partner endpoints instead of (or alongside)
+plain service-to-service calls, shaped like:
+
+```json
+"unibank.bridge.connectors.amplitude_v11": {
+  "BF": { "url": "https://aif.gslb.com:443/burp", "userCode": "USER_SMG" },
+  "INTEROP_GIMAC": {
+    "CM": { "url": "https://aif.gslb.com:443/camp/", "userCode": "USER_SMG" }
+  },
+  "defaults": { "delayInMillis": "100", "maxRetries": "0" }
+}
+```
+
+Any key under `dashboard.bridge-connector-prefix` (default
+`unibank.bridge.connectors.`) is scanned for entries keyed by a country code
+that contain a `url` — each becomes an edge from the service to a `country:`
+node labeled with that code (shown with a dashed violet border to distinguish
+it from a real service). A nested group like `INTEROP_GIMAC` is unwrapped one
+level so its country entries are still picked up; the `defaults` tuning bag
+is skipped, never treated as a country. The same country appearing under
+multiple connectors (e.g. both `amplitude_v10` and `amplitude_v11`) merges
+into one node with multiple incoming edges.
+
 ## How matching works
 
 Only keys under a configured service-call prefix (`dashboard.strip-prefixes`,

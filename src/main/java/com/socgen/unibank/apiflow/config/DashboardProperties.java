@@ -25,6 +25,14 @@ public class DashboardProperties {
     /** Service names ignored entirely - no node, no edges, no config read (case-insensitive). */
     private List<String> excludedServices = List.of("VAULT_L1");
 
+    /**
+     * Prefix identifying a per-country bridge/connector block, e.g.
+     * "unibank.bridge.connectors.amplitude_v11". Each entry under it keyed by a
+     * country code (other than "defaults") and containing a "url" is graphed as
+     * a call from the service to that country.
+     */
+    private String bridgeConnectorPrefix = "unibank.bridge.connectors.";
+
     private Duration configRefreshInterval = Duration.ofSeconds(60);
 
     private Duration healthCheckInterval = Duration.ofSeconds(20);
@@ -48,6 +56,9 @@ public class DashboardProperties {
 
     public List<String> getExcludedServices() { return excludedServices; }
     public void setExcludedServices(List<String> excludedServices) { this.excludedServices = excludedServices; }
+
+    public String getBridgeConnectorPrefix() { return bridgeConnectorPrefix; }
+    public void setBridgeConnectorPrefix(String bridgeConnectorPrefix) { this.bridgeConnectorPrefix = bridgeConnectorPrefix; }
 
     public Duration getConfigRefreshInterval() { return configRefreshInterval; }
     public void setConfigRefreshInterval(Duration configRefreshInterval) { this.configRefreshInterval = configRefreshInterval; }

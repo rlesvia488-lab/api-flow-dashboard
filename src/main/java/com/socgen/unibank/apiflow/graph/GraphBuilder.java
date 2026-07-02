@@ -2,6 +2,7 @@ package com.socgen.unibank.apiflow.graph;
 
 import com.socgen.unibank.apiflow.config.DashboardProperties;
 import com.socgen.unibank.apiflow.model.ApiEdge;
+import com.socgen.unibank.apiflow.model.NodeKind;
 import com.socgen.unibank.apiflow.model.ServiceNode;
 import com.socgen.unibank.apiflow.vault.ServiceCatalog;
 import org.springframework.stereotype.Component;
@@ -18,11 +19,14 @@ public class GraphBuilder {
 
     private final EndpointExtractor extractor;
     private final ServiceNameMatcher matcher;
+    private final BridgeConnectorExtractor connectorExtractor;
     private final DashboardProperties props;
 
-    public GraphBuilder(EndpointExtractor extractor, ServiceNameMatcher matcher, DashboardProperties props) {
+    public GraphBuilder(EndpointExtractor extractor, ServiceNameMatcher matcher,
+                         BridgeConnectorExtractor connectorExtractor, DashboardProperties props) {
         this.extractor = extractor;
         this.matcher = matcher;
+        this.connectorExtractor = connectorExtractor;
         this.props = props;
     }
 
@@ -38,7 +42,7 @@ public class GraphBuilder {
 
         Map<String, ServiceNode> nodes = new LinkedHashMap<>();
         for (String name : serviceNames) {
-            nodes.put(name, new ServiceNode(name, name));
+            nodes.put(name, new ServiceNode(name, name, NodeKind.SERVICE));
         }
 
         List<ApiEdge> edges = new ArrayList<>();
@@ -46,6 +50,7 @@ public class GraphBuilder {
 
         for (String source : serviceNames) {
             Map<String, Object> config = catalog.readConfig(source);
+
             for (EndpointExtractor.RawEndpoint raw : extractor.extract(config)) {
                 String targetKey = matcher.extractTargetKey(raw.keyPath());
                 String matched = matcher.matchService(targetKey, normalizedToOriginal);
@@ -59,6 +64,15 @@ public class GraphBuilder {
                 String edgeId = source + "->" + matched + "#" + raw.keyPath();
                 edges.add(new ApiEdge(edgeId, source, matched, raw.keyPath(), raw.url()));
                 urls.add(raw.url());
+            }
+
+            for (BridgeConnectorExtractor.CountryEndpoint country : connectorExtractor.extract(config)) {
+                String countryNodeId = "country:" + country.country();
+                nodes.putIfAbsent(countryNodeId, new ServiceNode(countryNodeId, country.country(), NodeKind.COUNTRY));
+
+                String edgeId = source + "->" + countryNodeId + "#" + country.keyPath();
+                edges.add(new ApiEdge(edgeId, source, countryNodeId, country.keyPath(), country.url()));
+                urls.add(country.url());
             }
         }
 

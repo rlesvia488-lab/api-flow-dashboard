@@ -41,15 +41,17 @@ function aggregateNodeHealth(nodeId, edges, statusByUrl) {
 
 function buildElements(graph) {
   const nodes = graph.nodes.map((n) => {
+    const isCountry = n.kind === 'COUNTRY';
     const agg = aggregateNodeHealth(n.id, graph.edges, graph.statusByUrl);
     const summary = agg.cls === 'none' ? '' : `${agg.up} up  ${agg.degraded ? agg.degraded + ' deg  ' : ''}${agg.down ? agg.down + ' down' : ''}`.trim();
     return {
       data: {
         id: n.id,
         label: summary ? `${n.label}\n${summary}` : n.label,
-        health: agg.cls
+        health: agg.cls,
+        kind: n.kind
       },
-      classes: `health-${agg.cls}`
+      classes: [`health-${agg.cls}`, isCountry ? 'country' : ''].join(' ').trim()
     };
   });
 
@@ -108,6 +110,20 @@ const STYLE = [
   { selector: 'node.health-degraded', style: { 'border-color': COLORS.degraded } },
   { selector: 'node.health-down', style: { 'border-color': COLORS.down, 'border-width': 3.5 } },
   { selector: 'node.health-none', style: { 'border-color': '#3a4260' } },
+  {
+    selector: 'node.country',
+    style: {
+      shape: 'round-rectangle',
+      'background-color': '#241a38',
+      'background-gradient-stop-colors': '#2c2044 #170f26',
+      'border-style': 'dashed',
+      'border-color': '#a78bfa',
+      'font-size': 11,
+      'text-max-width': '70px',
+      padding: '10px',
+      color: '#e9e3ff'
+    }
+  },
   {
     selector: 'node:selected',
     style: { 'border-width': 4, 'border-color': '#ffd43b' }

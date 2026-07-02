@@ -11,8 +11,10 @@ import java.util.Map;
  * Canned service configs so the dashboard is demoable without live Vault
  * credentials. Mirrors the real shape (flat + nested keys, secrets that must
  * never reach the UI, several ".endpoint" keys per service, a mix of healthy
- * and failing targets, and one infra/component endpoint that must NOT show
- * up in the graph since it isn't a service-to-service call).
+ * and failing targets, one infra/component endpoint that must NOT show up in
+ * the graph since it isn't a service-to-service call, and a bridge/connector
+ * block with per-country endpoints, a nested interop group, and a "defaults"
+ * tuning bag that must be skipped).
  */
 @Component
 @ConditionalOnProperty(prefix = "vault", name = "enabled", havingValue = "false", matchIfMissing = true)
@@ -53,9 +55,23 @@ public class DemoServiceCatalog implements ServiceCatalog {
                 "unibank.services.bridge.amplitude.endpoint", "https://httpbingo.org/status/401"
         )));
 
+        Map<String, Object> amplitudeV11 = new LinkedHashMap<>();
+        amplitudeV11.put("BF", Map.of("url", "https://httpbingo.org/status/200", "userCode", "USER_SMG"));
+        amplitudeV11.put("CI", Map.of("url", "https://httpbingo.org/status/503", "userCode", "USER_SMG"));
+        amplitudeV11.put("INTEROP_GIMAC", Map.of(
+                "CM", Map.of("url", "https://httpbingo.org/status/200", "userCode", "USER_SMG")
+        ));
+        amplitudeV11.put("defaults", Map.of(
+                "delayInMillis", "100",
+                "maxDelayInMillis", "6000",
+                "maxRetries", "0",
+                "transfer.flwind", "PROD"
+        ));
+
         configs.put("bridge-amplitude-service", config(Map.of(
                 "logging.level.root", "DEBUG",
-                "unibank.services.accounts.internal.endpoint", "https://httpbingo.org/status/200"
+                "unibank.services.accounts.internal.endpoint", "https://httpbingo.org/status/200",
+                "unibank.bridge.connectors.amplitude_v11", amplitudeV11
         )));
     }
 

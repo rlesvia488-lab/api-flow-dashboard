@@ -58,12 +58,13 @@ function CallRow({ edge, otherServiceLabel }) {
 
 function NodeDetail({ info, onClose }) {
   const { node, outbound, inbound } = info;
+  const isCountry = node.kind === 'COUNTRY';
   return (
     <div className="detail-panel">
       <button className="close-btn" onClick={onClose} aria-label="Close">&times;</button>
       <h3>{node.label}</h3>
       <p className="muted">
-        Service &middot; {outbound.length} call{outbound.length === 1 ? '' : 's'} &middot; {inbound.length} caller{inbound.length === 1 ? '' : 's'}
+        {isCountry ? 'Country / partner endpoint' : 'Service'} &middot; {outbound.length} call{outbound.length === 1 ? '' : 's'} &middot; {inbound.length} caller{inbound.length === 1 ? '' : 's'}
       </p>
 
       <div className="detail-section">
@@ -246,6 +247,7 @@ export default function App() {
           <div><span className="dot degraded" /> 3xx/401/403/404 - degraded</div>
           <div><span className="dot down" /> 5xx/timeout/dns/tls - down</div>
           <div><span className="dot unknown" /> not checked yet</div>
+          <div className="legend-node"><span className="box country" /> country / partner endpoint</div>
         </div>
       </main>
     </div>
